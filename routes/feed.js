@@ -2,6 +2,7 @@ const express = require("express");
 const feedController = require("../controllers/feed");
 const { check, body } = require("express-validator");
 
+
 const router = express.Router();
 
 //GET /feed/posts
