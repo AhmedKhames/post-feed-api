@@ -51,6 +51,7 @@ app.use("/feed", feedRoute);
 
 app.use("/auth", authRoute);
 
+
 app.use((error, req, res, next) => {
   console.log(error);
   const status = error.statusCode || 500;
@@ -65,7 +66,17 @@ app.use((error, req, res, next) => {
 mongoose
   .connect(MONGO_URI)
   .then((result) => {
-    app.listen(8080);
+    const server = app.listen(8080);
+    const io = require('socket.io')(server,{
+      cors:{
+        origin:'*',
+        methods: ["GET", "POST"],
+        credentials:true
+      }
+    });
+    io.on('connection',socket=>{
+      console.log('client connected')
+    })
   })
   .catch((err) => {
     console.log(err);
