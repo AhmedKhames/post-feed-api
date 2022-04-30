@@ -7,13 +7,14 @@ const fs = require("fs");
 const { v4: uuidv4 } = require('uuid');
 const path = require("path");
 
-//routes
-const feedRoute = require("./routes/feed");
-const authRoute = require("./routes/auth");
-
 const app = express();
 
 const MONGO_URI = "mongodb://localhost:27017/messages";
+
+// graphql
+const {graphqlHTTP} = require('express-graphql');
+const graphqlShema = require('./graphql/schema');
+const graphqlResolver = require('./graphql/resolver');
 
 
 const fileStorage = multer.diskStorage({
@@ -44,12 +45,36 @@ app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus (200);
+  }
   next();
 });
 
-app.use("/feed", feedRoute);
 
-app.use("/auth", authRoute);
+app.use('/graphql',graphqlHTTP({
+  schema: graphqlShema,
+  rootValue: graphqlResolver,
+  graphiql:true,
+  customFormatErrorFn:(err)=>{
+    if(!err.originalError){
+      return err;
+    }
+    const data = err.originalError.data;
+    const message = err.message || 'Error occured';
+    const code = err.originalError.code || 500;
+    return{
+      message : message,
+      statusCode : code,
+      data:data
+    }
+
+  }
+  
+}))
+
+
+
 
 
 app.use((error, req, res, next) => {
@@ -66,17 +91,7 @@ app.use((error, req, res, next) => {
 mongoose
   .connect(MONGO_URI)
   .then((result) => {
-    const server = app.listen(8080);
-    const io = require('socket.io')(server,{
-      cors:{
-        origin:'*',
-        methods: ["GET", "POST"],
-        credentials:true
-      }
-    });
-    io.on('connection',socket=>{
-      console.log('client connected')
-    })
+    app.listen(8080);
   })
   .catch((err) => {
     console.log(err);
