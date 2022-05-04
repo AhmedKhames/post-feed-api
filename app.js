@@ -15,7 +15,8 @@ const MONGO_URI = "mongodb://localhost:27017/messages";
 const {graphqlHTTP} = require('express-graphql');
 const graphqlShema = require('./graphql/schema');
 const graphqlResolver = require('./graphql/resolver');
-
+const isAuth = require('./middlewares/isAuth'); 
+const { clearImage } = require('./util/clearImage');
 
 const fileStorage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -52,6 +53,30 @@ app.use((req, res, next) => {
 });
 
 
+app.use(isAuth)
+
+app.put('/post-image' ,(req,res,next)=>{
+
+  if (!req.isAuth) {
+    const error = new Error("Not authenticated!");
+    error.code = 401;
+    throw error;
+  }
+
+  if (!req.file) {
+    return res.status(200).json({message : 'No file provided'});
+  }
+  if (req.body.oldPath) {
+    //clear image
+    clearImage(req.body.oldPath);
+  }
+  return res.status(201).json({
+    message : 'file uploaded',
+    filePath : req.file.path
+  })
+});
+
+
 app.use('/graphql',graphqlHTTP({
   schema: graphqlShema,
   rootValue: graphqlResolver,
@@ -74,9 +99,6 @@ app.use('/graphql',graphqlHTTP({
 }))
 
 
-
-
-
 app.use((error, req, res, next) => {
   console.log(error);
   const status = error.statusCode || 500;
@@ -96,3 +118,4 @@ mongoose
   .catch((err) => {
     console.log(err);
   });
+

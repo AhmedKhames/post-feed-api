@@ -6,8 +6,16 @@ module.exports = buildSchema(`
         userId: String!
     }
 
+    type PostsData{
+        posts : [Post!]!
+        totalPosts : Int!
+    }
+
     type Query {
         login(email:String! , password : String!):AuthData!
+        posts(page : Int) :PostsData!
+        post(id : ID!):Post!
+        user : User!
     }
 
     type Post{
@@ -33,10 +41,18 @@ module.exports = buildSchema(`
         name:String!
     }
 
-    
+    input postData{
+        title : String!
+        content : String!
+        imageUrl : String!
+
+    }
 
     type Mutation {
         createUser(userInput :userData) : User!
-        
+        createPost(postInput :postData) : Post!
+        editPost(id:ID! , postInput:postData) : Post!
+        deletePost(id:ID!) : Boolean
+        updateStatus(status : String!):User!
     }
 `);
